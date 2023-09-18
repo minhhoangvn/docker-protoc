@@ -108,7 +108,7 @@ RUN go install github.com/gomatic/renderizer/v2/cmd/renderizer@latest
 # Origin protoc-gen-go should be installed last, for not been overwritten by any other binaries(see #210)
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@${go_protoc_gen_go_version}
 
-RUN go install github.com/sorcererxw/protoc-gen-go-grpc-mock@latest@${protoc_gen_go_grpc_mock}
+RUN go install github.com/minhhoangvn/protoc-gen-go-grpc-mock@${protoc_gen_go_grpc_mock}
 
 RUN go install github.com/mwitkow/go-proto-validators/protoc-gen-govalidators@v${go_mwitkow_gpv_version}
 
@@ -129,7 +129,6 @@ FROM debian:$debian_version-slim AS protoc-all
 
 ARG grpc_version
 ARG grpc_gateway_version
-ARG protoc_gen_go_grpc_mock
 
 ARG node_version
 ARG node_grpc_tools_node_protoc_ts_version

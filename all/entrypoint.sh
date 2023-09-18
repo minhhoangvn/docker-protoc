@@ -26,6 +26,7 @@ printUsage() {
     echo " --go-package-map                                 Map proto imports to go import paths"
     echo " --go-plugin-micro                                Replaces the Go gRPC plugin with go-micro"
     echo " --go-proto-validator                             Generate Go proto validations - see https://github.com/mwitkow/go-proto-validators"
+    echo " --go-grpc-mock                                   Generate Go mock proto - see https://github.com/sorcererxw/protoc-gen-go-grpc-mock"
     echo " --go-grpc-require-unimplemented-servers          Generate Go gRPC service with unimplemented server for future compatability- https://github.com/grpc/grpc-go/tree/master/cmd/protoc-gen-go-grpc#future-proofing-services"
     echo " --no-google-includes                             Don't include Google protobufs"
     echo " --descr-include-imports                          When using --descriptor_set_out, also include all dependencies of the input files in the set, so that the set is self-contained"
@@ -63,6 +64,7 @@ GO_MODULE_PREFIX=""
 GO_PACKAGE_MAP=""
 GO_PLUGIN="grpc"
 GO_VALIDATOR=false
+GO_GRPC_MOCK=false
 GO_GRPC_REQUIRE_UNIMPLEMENTED_SERVERS="require_unimplemented_servers=false"
 NO_GOOGLE_INCLUDES=false
 DESCR_INCLUDE_IMPORTS=false
@@ -184,6 +186,10 @@ while test $# -gt 0; do
             GO_VALIDATOR=true
             shift
             ;;
+        --go-grpc-mock)
+            GO_GRPC_MOCK=true
+            shift
+            ;;
         --go-grpc-require-unimplemented-servers)
             GO_GRPC_REQUIRE_UNIMPLEMENTED_SERVERS="require_unimplemented_servers=true"
             shift
@@ -297,6 +303,11 @@ if [[ "$GO_VALIDATOR" == true && "$GEN_LANG" != "go" ]]; then
     exit 1
 fi
 
+if [[ "$GO_GRPC_MOCK" == true && "$GEN_LANG" != "go" ]]; then
+    echo "Generating proto mock is Go specific."
+    exit 1
+fi
+
 if [[ "$GEN_RBI" == true && "$GEN_LANG" != "ruby" ]]; then
     echo "Generating RBI declaration files is a Ruby specific option."
     exit 1
@@ -346,8 +357,8 @@ fi
 GEN_STRING=''
 case $GEN_LANG in
     "go")
-        GEN_STRING="--go_out=$OUT_DIR --go_opt=${GO_SOURCE_RELATIVE}${GO_MODULE_PREFIX}${GO_PACKAGE_MAP}\
-            --go-grpc_out=$OUT_DIR --go-grpc_opt=${GO_SOURCE_RELATIVE}${GO_MODULE_PREFIX}${GO_PACKAGE_MAP}${GO_GRPC_REQUIRE_UNIMPLEMENTED_SERVERS}"
+        GEN_STRING="--go_out=${GO_SOURCE_RELATIVE}${GO_MODULE_PREFIX}${GO_PACKAGE_MAP}plugins=grpc:$OUT_DIR"
+
         if [[ ${GO_PLUGIN} == "micro" ]]; then
           GEN_STRING="$GEN_STRING --micro_out=$OUT_DIR"
         fi
@@ -422,6 +433,14 @@ if [[ $GO_VALIDATOR == true && $GEN_LANG == "gogo" ]]; then
     GEN_STRING="$GEN_STRING --govalidators_out=gogoimport=true:$OUT_DIR"
 fi
 
+if [[ $GO_GRPC_MOCK == true && $GEN_LANG == "go" ]]; then
+    GEN_STRING="$GEN_STRING --go-grpc-mock_out=${GO_SOURCE_RELATIVE}${GO_MODULE_PREFIX}${GO_PACKAGE_MAP}:$OUT_DIR"
+fi
+
+if [[ $GO_GRPC_MOCK == true && $GEN_LANG == "gogo" ]]; then
+    GEN_STRING="$GEN_STRING --go-grpc-mock_out=${GO_SOURCE_RELATIVE}${GO_MODULE_PREFIX}${GO_PACKAGE_MAP}:$OUT_DIR"
+fi
+
 if [[ $GEN_VALIDATOR == true && $GEN_LANG == "go" ]]; then
     GEN_STRING="$GEN_STRING --validate_out=lang=go${VALIDATOR_SOURCE_RELATIVE}:$OUT_DIR"
 fi
@@ -480,6 +499,15 @@ else
 fi
 
 # Run protoc
+
+echo "================================================"
+echo "================================================"
+echo "============= protoc generate comamnd =========="
+echo "protoc $PROTO_INCLUDE $GEN_STRING $LINT_STRING ${PROTO_FILES[@]}"
+echo "================================================"
+echo "================================================"
+echo "================================================"
+
 protoc $PROTO_INCLUDE \
     $GEN_STRING \
     $LINT_STRING \
