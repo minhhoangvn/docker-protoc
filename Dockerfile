@@ -26,7 +26,6 @@ ARG go_envoyproxy_pgv_version
 ARG go_mwitkow_gpv_version
 ARG uber_prototool_version
 ARG protoc_gen_go_grpc_mock
-
 RUN set -ex && apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     pkg-config \
@@ -39,13 +38,12 @@ RUN set -ex && apt-get update && apt-get install -y --no-install-recommends \
     autoconf \
     zlib1g-dev \
     libssl-dev \
-    clang \
-    python3-pip
+    clang
 
 WORKDIR /tmp
 RUN git clone --depth 1 --shallow-submodules -b v$grpc_version.x --recursive https://github.com/grpc/grpc && \
-    git clone --depth 1 --shallow-submodules -b v$grpc_java_version.x --recursive https://github.com/grpc/grpc-java && \
-    git clone --depth 1 --shallow-submodules -b $protobuf_js_version --recursive https://github.com/protocolbuffers/protobuf-javascript && \
+    git clone --depth 1 --shallow-submodules -b v$grpc_java_version.x --recursive https://github.com/grpc/grpc-java.git && \
+    git clone --depth 1 --shallow-submodules -b v$grpc_version.x --recursive https://github.com/grpc/grpc-go.git && \
     git clone --depth 1 https://github.com/googleapis/googleapis && \
     git clone --depth 1 https://github.com/googleapis/api-common-protos
 
@@ -59,9 +57,6 @@ RUN $bazel build //external:protocol_compiler && \
 WORKDIR /tmp/grpc-java
 RUN $bazel build //compiler:grpc_java_plugin
 
-WORKDIR /tmp/protobuf-javascript
-RUN $bazel build //generator:protoc-gen-js
-
 WORKDIR /tmp
 # Install protoc required by envoyproxy/protoc-gen-validate package
 RUN cp -a /tmp/grpc/bazel-bin/external/com_google_protobuf/. /usr/local/bin/
@@ -74,36 +69,53 @@ RUN curl -fsSL "https://github.com/uber/prototool/releases/download/v${uber_prot
     -o /usr/local/bin/prototool && \
     chmod +x /usr/local/bin/prototool
 
-# go install go-related bins
-RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@${go_protoc_gen_go_grpc_version}
+# Workaround for the transition to protoc-gen-go-grpc
+# https://grpc.io/docs/languages/go/quickstart/#regenerate-grpc-code
+RUN ( cd ./grpc-go/cmd/protoc-gen-go-grpc && go install . )
+
+# Go get go-related bins
+WORKDIR /tmp
+RUN set -e && \
+    GO111MODULE=on go get google.golang.org/grpc@v1.47.0
 
 # install protoc-gen-grpc-gateway and protoc-gen-openapiv2
-RUN go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@${grpc_gateway_version}
-RUN go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@${grpc_gateway_version}
+RUN set -e && \
+    GO111MODULE=on go get -u github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@${grpc_gateway_version} && \
+    cd /go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway/v2@${grpc_gateway_version}/protoc-gen-grpc-gateway && \
+    go install .
 
-RUN go install github.com/gogo/protobuf/protoc-gen-gogo@latest
-RUN go install github.com/gogo/protobuf/protoc-gen-gogofast@latest
+RUN set -e && \
+    GO111MODULE=on go get -u github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@${grpc_gateway_version} && \
+    cd /go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway/v2@${grpc_gateway_version}/protoc-gen-openapiv2 && \
+    go install .
 
-RUN go install github.com/ckaznocha/protoc-gen-lint@latest
+RUN go get -u github.com/gogo/protobuf/protoc-gen-gogo
+RUN go get -u github.com/gogo/protobuf/protoc-gen-gogofast
 
-RUN go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest
+RUN go get -u github.com/ckaznocha/protoc-gen-lint
 
-RUN go install github.com/micro/micro/v3/cmd/protoc-gen-micro@latest
+RUN set -e && \
+    GO111MODULE=on go get github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
 
-RUN go install github.com/envoyproxy/protoc-gen-validate@v${go_envoyproxy_pgv_version}
+RUN go get -u github.com/micro/micro/v3/cmd/protoc-gen-micro
+
+# protoc-gen-go is depended on by protoc-gen-validate, install here and then overwrite later just in case to ensure that ultimately the right version is installed
+RUN go get -u github.com/golang/protobuf/protoc-gen-go
+RUN GO111MODULE=on go get -d github.com/envoyproxy/protoc-gen-validate@v${go_envoyproxy_pgv_version}
+RUN make -C /go/pkg/mod/github.com/envoyproxy/protoc-gen-validate@v${go_envoyproxy_pgv_version}/ build
 
 # Add Ruby Sorbet types support (rbi)
-RUN go install github.com/coinbase/protoc-gen-rbi@latest
+RUN go get -u github.com/coinbase/protoc-gen-rbi
 
-RUN go install github.com/gomatic/renderizer/v2/cmd/renderizer@latest
+RUN go get github.com/gomatic/renderizer/v2/cmd/renderizer
 
 # Origin protoc-gen-go should be installed last, for not been overwritten by any other binaries(see #210)
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@${go_protoc_gen_go_version}
+RUN go get -u github.com/golang/protobuf/protoc-gen-go
 
+# Need to get these too:
+RUN go get -u github.com/mwitkow/go-proto-validators/@v${go_mwitkow_gpv_version}
+RUN go get -u github.com/mwitkow/go-proto-validators/protoc-gen-govalidators@v${go_mwitkow_gpv_version}
 RUN go install github.com/minhhoangvn/protoc-gen-go-grpc-mock@${protoc_gen_go_grpc_mock}
-
-RUN go install github.com/mwitkow/go-proto-validators/protoc-gen-govalidators@v${go_mwitkow_gpv_version}
-
 # Add scala support
 RUN curl -fLO "https://github.com/scalapb/ScalaPB/releases/download/v${scala_pb_version}/protoc-gen-scala-${scala_pb_version}-linux-x86_64.zip" \
     && unzip protoc-gen-scala-${scala_pb_version}-linux-x86_64.zip \
@@ -113,9 +125,6 @@ RUN curl -fLO "https://github.com/scalapb/ScalaPB/releases/download/v${scala_pb_
 RUN curl -fsSL "https://github.com/grpc/grpc-web/releases/download/${grpc_web_version}/protoc-gen-grpc-web-${grpc_web_version}-linux-x86_64" \
     -o /tmp/grpc_web_plugin && \
     chmod +x /tmp/grpc_web_plugin
-
-# Add mypy support
-RUN pip3 install -t /opt/mypy-protobuf mypy-protobuf==${mypy_version}
 
 FROM debian:$debian-slim AS protoc-all
 
@@ -148,6 +157,7 @@ RUN curl -fsSL "https://deb.nodesource.com/setup_${node_version}.x" | bash -
 RUN apt-get install -y nodejs
 
 # Add Node TypeScript support
+RUN npm config set unsafe-perm true
 RUN npm i -g grpc_tools_node_protoc_ts@$node_grpc_tools_node_protoc_ts_version grpc-tools@$node_grpc_tools_version protoc-gen-grpc-web@$node_protoc_gen_grpc_web_version
 
 # Add TypeScript support
@@ -164,8 +174,6 @@ COPY --from=build /tmp/grpc/bazel-bin/external/com_google_protobuf/ /usr/local/b
 COPY --from=build /tmp/grpc/bazel-bin/src/compiler/ /usr/local/bin/
 # Copy protoc java plugin
 COPY --from=build /tmp/grpc-java/bazel-bin/compiler/ /usr/local/bin/
-# Copy protoc js plugin
-COPY --from=build /tmp/protobuf-javascript/bazel-bin/generator/protoc-gen-js /usr/local/bin/
 # Copy grpc_cli
 COPY --from=build /tmp/grpc/bazel-bin/test/cpp/util/ /usr/local/bin/
 
@@ -180,11 +188,6 @@ COPY --from=build /go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway/v2@${grpc_g
 COPY --from=build /go/pkg/mod/github.com/envoyproxy/protoc-gen-validate@v${go_envoyproxy_pgv_version}/ /opt/include/
 
 COPY --from=build /go/pkg/mod/github.com/mwitkow/go-proto-validators@v${go_mwitkow_gpv_version}/ /opt/include/github.com/mwitkow/go-proto-validators/
-
-# Copy mypy
-COPY --from=build /opt/mypy-protobuf/ /opt/mypy-protobuf/
-RUN mv /opt/mypy-protobuf/bin/* /usr/local/bin/
-ENV PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}/opt/mypy-protobuf/"
 
 ADD all/entrypoint.sh /usr/local/bin
 RUN chmod +x /usr/local/bin/entrypoint.sh
