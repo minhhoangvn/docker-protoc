@@ -357,12 +357,7 @@ fi
 GEN_STRING=''
 case $GEN_LANG in
     "go")
-        GEN_STRING=" \
-        --go_out=$OUT_DIR \
-        --go_opt=${GO_SOURCE_RELATIVE}${GO_MODULE_PREFIX}${GO_PACKAGE_MAP} \
-        --go-grpc_out=${GO_SOURCE_RELATIVE}${GO_MODULE_PREFIX}${GO_PACKAGE_MAP}:$OUT_DIR \
-        --go-grpc_opt=${GO_SOURCE_RELATIVE}${GO_MODULE_PREFIX}${GO_PACKAGE_MAP}${GO_GRPC_REQUIRE_UNIMPLEMENTED_SERVERS} \
-        "
+        GEN_STRING="--go_out=${GO_SOURCE_RELATIVE}${GO_MODULE_PREFIX}${GO_PACKAGE_MAP}plugins=grpc:$OUT_DIR"
 
 
         if [[ ${GO_PLUGIN} == "micro" ]]; then
