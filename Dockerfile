@@ -14,7 +14,7 @@ ARG go_envoyproxy_pgv_version
 ARG go_mwitkow_gpv_version
 ARG protoc_gen_go_grpc_mock
 
-FROM golang:$go_version-$debian_version AS build
+FROM golang:$go_version-$debian AS build
 
 # TIL docker arg variables need to be redefined in each build stage
 ARG grpc_version
@@ -117,7 +117,7 @@ RUN curl -fsSL "https://github.com/grpc/grpc-web/releases/download/${grpc_web_ve
 # Add mypy support
 RUN pip3 install -t /opt/mypy-protobuf mypy-protobuf==${mypy_version}
 
-FROM debian:$debian_version-slim AS protoc-all
+FROM debian:$debian-slim AS protoc-all
 
 ARG grpc_version
 ARG grpc_gateway_version
