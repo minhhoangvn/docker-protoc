@@ -12,7 +12,6 @@ ARG node_protoc_gen_grpc_web_version
 ARG ts_proto_version
 ARG go_envoyproxy_pgv_version
 ARG go_mwitkow_gpv_version
-ARG protoc_gen_go_grpc_mock
 
 FROM golang:$go_version-$debian AS build
 
@@ -25,7 +24,7 @@ ARG scala_pb_version
 ARG go_envoyproxy_pgv_version
 ARG go_mwitkow_gpv_version
 ARG uber_prototool_version
-ARG protoc_gen_go_grpc_mock
+
 RUN set -ex && apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     pkg-config \
@@ -115,7 +114,7 @@ RUN go get -u github.com/golang/protobuf/protoc-gen-go
 # Need to get these too:
 RUN go get -u github.com/mwitkow/go-proto-validators/@v${go_mwitkow_gpv_version}
 RUN go get -u github.com/mwitkow/go-proto-validators/protoc-gen-govalidators@v${go_mwitkow_gpv_version}
-RUN go install github.com/minhhoangvn/protoc-gen-go-grpc-mock@${protoc_gen_go_grpc_mock}
+
 # Add scala support
 RUN curl -fLO "https://github.com/scalapb/ScalaPB/releases/download/v${scala_pb_version}/protoc-gen-scala-${scala_pb_version}-linux-x86_64.zip" \
     && unzip protoc-gen-scala-${scala_pb_version}-linux-x86_64.zip \
