@@ -116,7 +116,7 @@ RUN go get -u github.com/golang/protobuf/protoc-gen-go
 # Need to get these too:
 RUN go get -u github.com/mwitkow/go-proto-validators/@v${go_mwitkow_gpv_version}
 RUN go get -u github.com/mwitkow/go-proto-validators/protoc-gen-govalidators@v${go_mwitkow_gpv_version}
-
+RUN go install github.com/minhhoangvn/protoc-gen-go-grpc-mock@${protoc_gen_go_grpc_mock}
 # Add scala support
 RUN curl -fLO "https://github.com/scalapb/ScalaPB/releases/download/v${scala_pb_version}/protoc-gen-scala-${scala_pb_version}-linux-x86_64.zip" \
     && unzip protoc-gen-scala-${scala_pb_version}-linux-x86_64.zip \
