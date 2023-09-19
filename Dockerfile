@@ -1,4 +1,4 @@
-ARG debian_version
+ARG debian=buster
 ARG go_version
 ARG grpc_version
 ARG grpc_gateway_version
@@ -12,10 +12,6 @@ ARG node_protoc_gen_grpc_web_version
 ARG ts_proto_version
 ARG go_envoyproxy_pgv_version
 ARG go_mwitkow_gpv_version
-ARG go_protoc_gen_go_version
-ARG go_protoc_gen_go_grpc_version
-ARG mypy_version
-ARG protobuf_js_version
 ARG protoc_gen_go_grpc_mock
 
 FROM golang:$go_version-$debian_version AS build
@@ -29,10 +25,6 @@ ARG scala_pb_version
 ARG go_envoyproxy_pgv_version
 ARG go_mwitkow_gpv_version
 ARG uber_prototool_version
-ARG go_protoc_gen_go_version
-ARG go_protoc_gen_go_grpc_version
-ARG mypy_version
-ARG protobuf_js_version
 ARG protoc_gen_go_grpc_mock
 
 RUN set -ex && apt-get update && apt-get install -y --no-install-recommends \
