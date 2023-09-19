@@ -74,48 +74,48 @@ RUN curl -fsSL "https://github.com/uber/prototool/releases/download/v${uber_prot
 # https://grpc.io/docs/languages/go/quickstart/#regenerate-grpc-code
 RUN ( cd ./grpc-go/cmd/protoc-gen-go-grpc && go install . )
 
-# Go get go-related bins
+# go install go-related bins
 WORKDIR /tmp
 RUN set -e && \
-    GO111MODULE=on go get google.golang.org/grpc@v1.47.0
+    GO111MODULE=on go install google.golang.org/grpc@v1.47.0
 
 # install protoc-gen-grpc-gateway and protoc-gen-openapiv2
 RUN set -e && \
-    GO111MODULE=on go get -u github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@${grpc_gateway_version} && \
+    GO111MODULE=on go install -u github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@${grpc_gateway_version} && \
     cd /go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway/v2@${grpc_gateway_version}/protoc-gen-grpc-gateway && \
     go install .
 
 RUN set -e && \
-    GO111MODULE=on go get -u github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@${grpc_gateway_version} && \
+    GO111MODULE=on go install -u github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@${grpc_gateway_version} && \
     cd /go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway/v2@${grpc_gateway_version}/protoc-gen-openapiv2 && \
     go install .
 
-RUN go get -u github.com/gogo/protobuf/protoc-gen-gogo
-RUN go get -u github.com/gogo/protobuf/protoc-gen-gogofast
+RUN go install -u github.com/gogo/protobuf/protoc-gen-gogo
+RUN go install -u github.com/gogo/protobuf/protoc-gen-gogofast
 
-RUN go get -u github.com/ckaznocha/protoc-gen-lint
+RUN go install -u github.com/ckaznocha/protoc-gen-lint
 
 RUN set -e && \
-    GO111MODULE=on go get github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
+    GO111MODULE=on go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
 
-RUN go get -u github.com/micro/micro/v3/cmd/protoc-gen-micro
+RUN go install -u github.com/micro/micro/v3/cmd/protoc-gen-micro
 
 # protoc-gen-go is depended on by protoc-gen-validate, install here and then overwrite later just in case to ensure that ultimately the right version is installed
-RUN go get -u github.com/golang/protobuf/protoc-gen-go
-RUN GO111MODULE=on go get -d github.com/envoyproxy/protoc-gen-validate@v${go_envoyproxy_pgv_version}
+RUN go install -u github.com/golang/protobuf/protoc-gen-go
+RUN GO111MODULE=on go install -d github.com/envoyproxy/protoc-gen-validate@v${go_envoyproxy_pgv_version}
 RUN make -C /go/pkg/mod/github.com/envoyproxy/protoc-gen-validate@v${go_envoyproxy_pgv_version}/ build
 
 # Add Ruby Sorbet types support (rbi)
-RUN go get -u github.com/coinbase/protoc-gen-rbi
+RUN go install -u github.com/coinbase/protoc-gen-rbi
 
-RUN go get github.com/gomatic/renderizer/v2/cmd/renderizer
+RUN go install github.com/gomatic/renderizer/v2/cmd/renderizer
 
 # Origin protoc-gen-go should be installed last, for not been overwritten by any other binaries(see #210)
-RUN go get -u github.com/golang/protobuf/protoc-gen-go
+RUN go install -u github.com/golang/protobuf/protoc-gen-go
 
 # Need to get these too:
-RUN go get -u github.com/mwitkow/go-proto-validators/@v${go_mwitkow_gpv_version}
-RUN go get -u github.com/mwitkow/go-proto-validators/protoc-gen-govalidators@v${go_mwitkow_gpv_version}
+RUN go install -u github.com/mwitkow/go-proto-validators/@v${go_mwitkow_gpv_version}
+RUN go install -u github.com/mwitkow/go-proto-validators/protoc-gen-govalidators@v${go_mwitkow_gpv_version}
 RUN go install github.com/minhhoangvn/protoc-gen-go-grpc-mock@${protoc_gen_go_grpc_mock}
 # Add scala support
 RUN curl -fLO "https://github.com/scalapb/ScalaPB/releases/download/v${scala_pb_version}/protoc-gen-scala-${scala_pb_version}-linux-x86_64.zip" \
